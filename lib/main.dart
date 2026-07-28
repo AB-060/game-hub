@@ -1,449 +1,341 @@
-import 'dart:async';
-import 'dart:math';
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+import 'home/particle_background.dart';
+import 'theme/app_colors.dart';
+import 'games/tic_tac_toe/ui/tic_tac_toe_home_screen.dart';
+import 'games/memory_match/ui/memory_home_screen.dart';
+import 'games/snake/ui/snake_home_screen.dart';
+import 'games/ludo/ui/ludo_home_screen.dart';
+import 'games/chess/chess.dart';
+import 'games/football/ui/football_home_screen.dart';
 
 void main() {
-  runApp(const BrickBreaker());
+  runApp(const GameHubApp());
 }
 
-class BrickBreaker extends StatelessWidget {
-  const BrickBreaker({super.key});
+class GameHubApp extends StatelessWidget {
+  const GameHubApp({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = ColorScheme.fromSeed(
+      seedColor: kAccent,
+      brightness: Brightness.dark,
+    );
+    final baseTextTheme = GoogleFonts.poppinsTextTheme(ThemeData.dark().textTheme).apply(
+      bodyColor: Colors.white,
+      displayColor: Colors.white,
+    );
+
     return MaterialApp(
-      title: "Brick Breaker",
+      title: "Game Hub",
       debugShowCheckedModeBanner: false,
-      theme: ThemeData.dark(),
-      home: const GameScreen(),
+      theme: ThemeData(
+        useMaterial3: true,
+        brightness: Brightness.dark,
+        scaffoldBackgroundColor: kBg,
+        colorScheme: colorScheme,
+        textTheme: baseTextTheme,
+        appBarTheme: AppBarTheme(
+          backgroundColor: kBg,
+          centerTitle: true,
+          elevation: 0,
+          titleTextStyle: GoogleFonts.poppins(
+            fontSize: 19,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: kAccent,
+            foregroundColor: const Color(0xFF001018),
+            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            textStyle: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+        ),
+        textButtonTheme: TextButtonThemeData(
+          style: TextButton.styleFrom(
+            foregroundColor: kMuted,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          ),
+        ),
+        iconTheme: const IconThemeData(color: Colors.white),
+      ),
+      home: const HomeScreen(),
     );
   }
 }
 
-class GameScreen extends StatefulWidget {
-  const GameScreen({super.key});
+class GameEntry {
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Color color;
+  final WidgetBuilder builder;
 
-  @override
-  State<GameScreen> createState() => _GameScreenState();
+  const GameEntry({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.color,
+    required this.builder,
+  });
 }
 
-class _GameScreenState extends State<GameScreen> {
-  int score = 0;
-  int lives = 3;
-  int level = 1;
-  bool gameOver = false;
-  bool won = false;
-  bool paused = false;
-  bool ballLaunched = false;
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
 
-  double bx = 0;
-  double by = 0.7;
-  double bdx = 0.012;
-  double bdy = -0.012;
-  double barX = 0;
-  double barWidth = 0.35;
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
 
-  List<List<int>> bricks = []; // 0=vide, 1=normal, 2=dur (2 coups)
-  int combo = 0;
-  int maxCombo = 0;
-
-  final List<Color> rowColors = [
-    Colors.red,
-    Colors.orange,
-    Colors.yellow,
-    Colors.green,
-    Colors.blue,
+class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
+  // Échecs et Football en premier, comme demandé.
+  static final List<GameEntry> games = [
+    GameEntry(
+      title: "Échecs",
+      subtitle: "2 joueurs",
+      icon: Icons.castle_rounded,
+      color: const Color(0xFF9FB4D9),
+      builder: (_) => const ChessScreen(),
+    ),
+    GameEntry(
+      title: "Football",
+      subtitle: "Nations · Tournois",
+      icon: Icons.sports_soccer_rounded,
+      color: const Color(0xFF8CE05B),
+      builder: (_) => const FootballHomeScreen(),
+    ),
+    GameEntry(
+      title: "Morpion",
+      subtitle: "2 joueurs · vs IA",
+      icon: Icons.close_rounded,
+      color: const Color(0xFFFF5C5C),
+      builder: (_) => const TicTacToeHomeScreen(),
+    ),
+    GameEntry(
+      title: "Memory",
+      subtitle: "Solo",
+      icon: Icons.psychology_alt_rounded,
+      color: const Color(0xFFC084FC),
+      builder: (_) => const MemoryHomeScreen(),
+    ),
+    GameEntry(
+      title: "Snake",
+      subtitle: "Solo",
+      icon: Icons.timeline_rounded,
+      color: const Color(0xFF4BE38A),
+      builder: (_) => const SnakeHomeScreen(),
+    ),
+    GameEntry(
+      title: "Ludo",
+      subtitle: "2 joueurs",
+      icon: Icons.casino_rounded,
+      color: kAccent,
+      builder: (_) => const LudoHomeScreen(),
+    ),
   ];
 
-  final List<Color> hardBrickColors = [
-    Colors.red.shade900,
-    Colors.deepOrange.shade900,
-    Colors.amber.shade900,
-    Colors.teal.shade900,
-    Colors.indigo.shade900,
-  ];
-
-  final FocusNode _focusNode = FocusNode();
-  bool _leftPressed = false;
-  bool _rightPressed = false;
-  Timer? _gameTimer;
+  late final AnimationController _entrance;
 
   @override
   void initState() {
     super.initState();
-    _resetBricks();
-    _startGame();
-  }
-
-  void _resetBricks() {
-    final rand = Random();
-    bricks = List.generate(
-      5,
-      (i) => List.generate(10, (j) => rand.nextDouble() < 0.15 ? 2 : 1),
-    );
-  }
-
-  double get _speed => 0.012 + (level - 1) * 0.003;
-
-  void _startGame() {
-    _gameTimer?.cancel();
-    _gameTimer = Timer.periodic(const Duration(milliseconds: 16), (time) {
-      if (paused || gameOver || won || !ballLaunched) return;
-      setState(() {
-        // Mouvement barre
-        if (_leftPressed) {
-          barX -= 0.045;
-          if (barX - barWidth / 2 < -1) barX = -1 + barWidth / 2;
-        }
-        if (_rightPressed) {
-          barX += 0.045;
-          if (barX + barWidth / 2 > 1) barX = 1 - barWidth / 2;
-        }
-
-        bx += bdx;
-        by += bdy;
-
-        // Rebond murs gauche/droite
-        if (bx - 0.02 < -1 || bx + 0.02 > 1) bdx = -bdx;
-        // Rebond plafond
-        if (by - 0.02 < -1) bdy = bdy.abs();
-
-        // Rebond barre
-        if (by + 0.02 > 0.85 &&
-            by + 0.02 < 0.95 &&
-            bx > barX - barWidth / 2 &&
-            bx < barX + barWidth / 2) {
-          bdy = -bdy.abs();
-          double hitPos = (bx - barX) / (barWidth / 2);
-          bdx = hitPos * 0.025;
-          combo = 0;
-        }
-
-        // Balle perdue
-        if (by > 1.08) {
-          lives--;
-          combo = 0;
-          if (lives <= 0) {
-            gameOver = true;
-          } else {
-            bx = barX;
-            by = 0.7;
-            bdx = _speed;
-            bdy = -_speed;
-            ballLaunched = false;
-          }
-        }
-
-        // Collision briques
-        bool anyBrick = false;
-        for (int i = 0; i < bricks.length; i++) {
-          for (int j = 0; j < bricks[i].length; j++) {
-            if (bricks[i][j] > 0) {
-              anyBrick = true;
-              double brickW = 2 / 10;
-              double brickH = 0.11;
-              double brickX = -1 + j * brickW + brickW / 2;
-              double brickY = -1 + i * brickH + brickH / 2;
-              if ((bx - brickX).abs() < brickW / 2 &&
-                  (by - brickY).abs() < brickH / 2) {
-                bricks[i][j]--;
-                bdy = -bdy;
-                combo++;
-                if (combo > maxCombo) maxCombo = combo;
-                int pts = (5 - i) * 10 * level;
-                if (combo > 1) pts = (pts * (1 + combo * 0.5)).toInt();
-                score += pts;
-              }
-            }
-          }
-        }
-        if (!anyBrick) {
-          // Niveau suivant
-          level++;
-          barWidth = (0.35 - (level - 1) * 0.02).clamp(0.15, 0.35);
-          _resetBricks();
-          bx = barX;
-          by = 0.7;
-          bdx = _speed;
-          bdy = -_speed;
-          ballLaunched = false;
-          if (level > 5) won = true;
-        }
-      });
-    });
-  }
-
-  void _restartGame() {
-    setState(() {
-      score = 0;
-      lives = 3;
-      level = 1;
-      gameOver = false;
-      won = false;
-      paused = false;
-      ballLaunched = false;
-      bx = 0;
-      by = 0.7;
-      bdx = _speed;
-      bdy = -_speed;
-      barX = 0;
-      barWidth = 0.35;
-      combo = 0;
-      maxCombo = 0;
-      _resetBricks();
-    });
-  }
-
-  void _handleKeyEvent(KeyEvent event) {
-    final isDown = event is KeyDownEvent;
-    final isUp = event is KeyUpEvent;
-
-    if (isDown) {
-      if (event.logicalKey == LogicalKeyboardKey.arrowLeft) _leftPressed = true;
-      if (event.logicalKey == LogicalKeyboardKey.arrowRight) _rightPressed = true;
-      if (event.logicalKey == LogicalKeyboardKey.space) {
-        if (!ballLaunched && !gameOver && !won) {
-          ballLaunched = true;
-        } else {
-          setState(() => paused = !paused);
-        }
-      }
-      if (event.logicalKey == LogicalKeyboardKey.escape) {
-        setState(() => paused = !paused);
-      }
-    }
-    if (isUp) {
-      if (event.logicalKey == LogicalKeyboardKey.arrowLeft) _leftPressed = false;
-      if (event.logicalKey == LogicalKeyboardKey.arrowRight) _rightPressed = false;
-    }
+    _entrance = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    )..forward();
   }
 
   @override
   void dispose() {
-    _gameTimer?.cancel();
-    _focusNode.dispose();
+    _entrance.dispose();
     super.dispose();
-  }
-
-  Widget _buildOverlay(String title, String subtitle) {
-    return Container(
-      color: Colors.black.withOpacity(0.80),
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(title,
-                style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 38,
-                    fontWeight: FontWeight.bold)),
-            const SizedBox(height: 10),
-            Text(subtitle,
-                style: const TextStyle(color: Colors.white70, fontSize: 16)),
-            const SizedBox(height: 8),
-            Text("Combo max : $maxCombo",
-                style: const TextStyle(color: Colors.amberAccent, fontSize: 14)),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: _restartGame,
-              icon: const Icon(Icons.refresh),
-              label: const Text("Rejouer"),
-              style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.indigo,
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 28, vertical: 12)),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return KeyboardListener(
-      focusNode: _focusNode,
-      autofocus: true,
-      onKeyEvent: _handleKeyEvent,
-      child: Scaffold(
-        backgroundColor: Colors.black,
-        appBar: AppBar(
-          backgroundColor: Colors.indigo.shade900,
-          centerTitle: true,
-          title: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // Vies
-              Row(
-                children: List.generate(
-                  3,
-                  (i) => Icon(
-                    Icons.favorite,
-                    color: i < lives ? Colors.red : Colors.grey.shade800,
-                    size: 20,
-                  ),
-                ),
-              ),
-              // Score + Level
-              Column(
-                children: [
-                  Text("SCORE : $score",
-                      style: const TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.bold)),
-                  Text("NIVEAU $level",
-                      style: const TextStyle(
-                          fontSize: 11, color: Colors.amberAccent)),
-                ],
-              ),
-              // Combo + Pause
-              Row(
-                children: [
-                  if (combo > 1)
-                    Text("x$combo",
-                        style: const TextStyle(
-                            color: Colors.amberAccent,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16)),
-                  IconButton(
-                    icon: Icon(paused ? Icons.play_arrow : Icons.pause),
-                    onPressed: () => setState(() => paused = !paused),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          automaticallyImplyLeading: false,
-        ),
-        body: Stack(
-          children: [
-            // Briques
-            Column(
-              children: [
-                for (int i = 0; i < bricks.length; i++)
-                  Row(
-                    children: [
-                      for (int j = 0; j < bricks[i].length; j++)
-                        Expanded(
-                          child: bricks[i][j] > 0
-                              ? Container(
-                                  height: 22,
-                                  margin: const EdgeInsets.all(2),
-                                  decoration: BoxDecoration(
-                                    color: bricks[i][j] == 2
-                                        ? hardBrickColors[i]
-                                        : rowColors[i],
-                                    borderRadius: BorderRadius.circular(3),
-                                    border: bricks[i][j] == 2
-                                        ? Border.all(
-                                            color: Colors.white30, width: 1.5)
-                                        : null,
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: rowColors[i].withOpacity(0.4),
-                                        blurRadius: 4,
-                                      )
-                                    ],
-                                  ),
-                                  child: bricks[i][j] == 2
-                                      ? const Center(
-                                          child: Text("■",
-                                              style: TextStyle(
-                                                  fontSize: 8,
-                                                  color: Colors.white30)))
-                                      : null,
-                                )
-                              : const SizedBox(height: 22),
+    return Scaffold(
+      backgroundColor: kBg,
+      body: Stack(
+        children: [
+          const Positioned.fill(child: ParticleBackground()),
+          SafeArea(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final width = constraints.maxWidth;
+                final crossAxisCount = width < 560 ? 2 : (width < 900 ? 3 : 4);
+                return CustomScrollView(
+                  slivers: [
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(22, 28, 22, 8),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Game Hub",
+                              style: GoogleFonts.poppins(
+                                fontSize: 32,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              "Choisis ton jeu et lance la partie.",
+                              style: GoogleFonts.poppins(
+                                fontSize: 14,
+                                color: kMuted,
+                                height: 1.5,
+                              ),
+                            ),
+                          ],
                         ),
-                    ],
-                  ),
-              ],
-            ),
-
-            // Balle
-            Align(
-              alignment: Alignment(bx, by),
-              child: Container(
-                height: 16,
-                width: 16,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                        color: Colors.white.withOpacity(0.9), blurRadius: 10)
-                  ],
-                ),
-              ),
-            ),
-
-            // Message lancer balle
-            if (!ballLaunched && !gameOver && !won && !paused)
-              Align(
-                alignment: const Alignment(0, 0.3),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.black54,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Text(
-                    "Appuie sur ESPACE pour lancer",
-                    style: TextStyle(color: Colors.white70, fontSize: 14),
-                  ),
-                ),
-              ),
-
-            // Barre
-            Align(
-              alignment: Alignment(barX, 0.92),
-              child: GestureDetector(
-                onHorizontalDragUpdate: (details) {
-                  setState(() {
-                    barX += details.delta.dx /
-                        MediaQuery.of(context).size.width *
-                        2;
-                    if (barX - barWidth / 2 < -1) barX = -1 + barWidth / 2;
-                    if (barX + barWidth / 2 > 1) barX = 1 - barWidth / 2;
-                    if (!ballLaunched) bx = barX;
-                  });
-                },
-                onTap: () {
-                  if (!ballLaunched && !gameOver && !won) {
-                    setState(() => ballLaunched = true);
-                  }
-                },
-                child: Container(
-                  width: MediaQuery.of(context).size.width * barWidth,
-                  height: 14,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Colors.blueAccent, Colors.purpleAccent],
+                      ),
                     ),
-                    borderRadius: BorderRadius.circular(7),
-                    boxShadow: [
-                      BoxShadow(
-                          color: Colors.blueAccent.withOpacity(0.7),
-                          blurRadius: 10)
-                    ],
+                    SliverPadding(
+                      padding: const EdgeInsets.all(16),
+                      sliver: SliverGrid(
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: crossAxisCount,
+                          mainAxisSpacing: 16,
+                          crossAxisSpacing: 16,
+                          childAspectRatio: 0.72,
+                        ),
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) {
+                        final start = (index / games.length) * 0.6;
+                        final animation = CurvedAnimation(
+                          parent: _entrance,
+                          curve: Interval(
+                            start,
+                            (start + 0.4).clamp(0, 1),
+                            curve: Curves.easeOutCubic,
+                          ),
+                        );
+                        return AnimatedBuilder(
+                          animation: animation,
+                          builder: (context, child) {
+                            return Opacity(
+                              opacity: animation.value,
+                              child: Transform.translate(
+                                offset: Offset(0, (1 - animation.value) * 24),
+                                child: child,
+                              ),
+                            );
+                          },
+                          child: _GameCard(game: games[index]),
+                        );
+                      },
+                      childCount: games.length,
+                    ),
                   ),
                 ),
+              ],
+            );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _GameCard extends StatefulWidget {
+  final GameEntry game;
+  const _GameCard({required this.game});
+
+  @override
+  State<_GameCard> createState() => _GameCardState();
+}
+
+class _GameCardState extends State<_GameCard> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final game = widget.game;
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapCancel: () => setState(() => _pressed = false),
+      onTapUp: (_) => setState(() => _pressed = false),
+      onTap: () {
+        Navigator.of(context).push(MaterialPageRoute(builder: game.builder));
+      },
+      child: AnimatedScale(
+        scale: _pressed ? 0.96 : 1,
+        duration: const Duration(milliseconds: 120),
+        curve: Curves.easeOut,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(22),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(22),
+                color: Colors.white.withOpacity(0.05),
+                border: Border.all(color: Colors.white.withOpacity(0.08)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.5),
+                    blurRadius: 20,
+                  ),
+                  BoxShadow(
+                    color: game.color.withOpacity(0.16),
+                    blurRadius: 30,
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        width: 46,
+                        height: 46,
+                        decoration: BoxDecoration(
+                          color: game.color.withOpacity(0.18),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Icon(game.icon, color: game.color, size: 26),
+                      ),
+                      Icon(
+                        Icons.play_circle_fill_rounded,
+                        color: game.color.withOpacity(0.85),
+                        size: 22,
+                      ),
+                    ],
+                  ),
+                  const Spacer(),
+                  Text(
+                    game.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    game.subtitle,
+                    style: GoogleFonts.poppins(fontSize: 12, color: kMuted),
+                  ),
+                ],
               ),
             ),
-
-            // Pause overlay
-            if (paused && !gameOver && !won)
-              _buildOverlay("⏸ PAUSE", "Appuie sur Échap pour continuer"),
-
-            // Game Over overlay
-            if (gameOver)
-              _buildOverlay("💀 GAME OVER", "Score final : $score"),
-
-            // Win overlay
-            if (won)
-              _buildOverlay("🎉 VICTOIRE !", "Score final : $score"),
-          ],
+          ),
         ),
       ),
     );
