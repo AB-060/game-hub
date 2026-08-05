@@ -1,0 +1,387 @@
+{
+  "settings_title": {
+    "en": "SETTINGS",
+    "fr": "PARAMÈTRES",
+    "es": "AJUSTES",
+    "pt": "CONFIGURAÇÕES",
+    "ar": ""
+  },
+  "tab_audio": {
+    "en": "Audio",
+    "fr": "Audio",
+    "es": "Audio",
+    "pt": "Áudio",
+    "ar": ""
+  },
+  "tab_graphics": {
+    "en": "Graphics",
+    "fr": "Graphismes",
+    "es": "Gráficos",
+    "pt": "Gráficos",
+    "ar": ""
+  },
+  "tab_controls": {
+    "en": "Controls",
+    "fr": "Contrôles",
+    "es": "Controles",
+    "pt": "Controles",
+    "ar": ""
+  },
+  "tab_gameplay": {
+    "en": "Gameplay",
+    "fr": "Jeu",
+    "es": "Jugabilidad",
+    "pt": "Jogabilidade",
+    "ar": ""
+  },
+  "tab_language": {
+    "en": "Language",
+    "fr": "Langue",
+    "es": "Idioma",
+    "pt": "Idioma",
+    "ar": ""
+  },
+  "master_volume": {
+    "en": "Master Volume",
+    "fr": "Volume général",
+    "es": "Volumen general",
+    "pt": "Volume geral",
+    "ar": ""
+  },
+  "music_volume": {
+    "en": "Music Volume",
+    "fr": "Volume musique",
+    "es": "Volumen música",
+    "pt": "Volume música",
+    "ar": ""
+  },
+  "music_on": {
+    "en": "Music",
+    "fr": "Musique",
+    "es": "Música",
+    "pt": "Música",
+    "ar": ""
+  },
+  "sfx_volume": {
+    "en": "SFX Volume",
+    "fr": "Volume effets",
+    "es": "Volumen efectos",
+    "pt": "Volume efeitos",
+    "ar": ""
+  },
+  "sfx_on": {
+    "en": "Sound Effects",
+    "fr": "Effets sonores",
+    "es": "Efectos de sonido",
+    "pt": "Efeitos sonoros",
+    "ar": ""
+  },
+  "fps_limit": {
+    "en": "FPS Limit",
+    "fr": "Limite FPS",
+    "es": "Límite FPS",
+    "pt": "Limite FPS",
+    "ar": ""
+  },
+  "particles": {
+    "en": "Particles",
+    "fr": "Particules",
+    "es": "Partículas",
+    "pt": "Partículas",
+    "ar": ""
+  },
+  "joystick_size": {
+    "en": "Joystick Size",
+    "fr": "Taille joystick",
+    "es": "Tamaño joystick",
+    "pt": "Tamanho joystick",
+    "ar": ""
+  },
+  "button_size": {
+    "en": "Button Size",
+    "fr": "Taille boutons",
+    "es": "Tamaño botones",
+    "pt": "Tamanho botões",
+    "ar": ""
+  },
+  "controls_opacity": {
+    "en": "Controls Opacity",
+    "fr": "Opacité contrôles",
+    "es": "Opacidad controles",
+    "pt": "Opacidade controles",
+    "ar": ""
+  },
+  "swap_controls": {
+    "en": "Swap Control Side",
+    "fr": "Inverser les côtés",
+    "es": "Invertir lados",
+    "pt": "Inverter lados",
+    "ar": ""
+  },
+  "invert_y": {
+    "en": "Invert Movement Y",
+    "fr": "Inverser axe Y",
+    "es": "Invertir eje Y",
+    "pt": "Inverter eixo Y",
+    "ar": ""
+  },
+  "invert_x": {
+    "en": "Invert Movement X",
+    "fr": "Inverser axe X",
+    "es": "Invertir eje X",
+    "pt": "Inverter eixo X",
+    "ar": ""
+  },
+  "sensitivity": {
+    "en": "Joystick Sensitivity",
+    "fr": "Sensibilité joystick",
+    "es": "Sensibilidad joystick",
+    "pt": "Sensibilidade joystick",
+    "ar": ""
+  },
+  "vibration": {
+    "en": "Vibration",
+    "fr": "Vibration",
+    "es": "Vibración",
+    "pt": "Vibração",
+    "ar": ""
+  },
+  "difficulty": {
+    "en": "Difficulty",
+    "fr": "Difficulté",
+    "es": "Dificultad",
+    "pt": "Dificuldade",
+    "ar": ""
+  },
+  "difficulty_easy": {
+    "en": "Easy",
+    "fr": "Facile",
+    "es": "Fácil",
+    "pt": "Fácil",
+    "ar": ""
+  },
+  "difficulty_normal": {
+    "en": "Normal",
+    "fr": "Normal",
+    "es": "Normal",
+    "pt": "Normal",
+    "ar": ""
+  },
+  "difficulty_hard": {
+    "en": "Hard",
+    "fr": "Difficile",
+    "es": "Difícil",
+    "pt": "Difícil",
+    "ar": ""
+  },
+  "match_duration": {
+    "en": "Match Duration",
+    "fr": "Durée du match",
+    "es": "Duración del partido",
+    "pt": "Duração da partida",
+    "ar": ""
+  },
+  "auto_sprint": {
+    "en": "Auto Sprint",
+    "fr": "Sprint automatique",
+    "es": "Sprint automático",
+    "pt": "Sprint automático",
+    "ar": ""
+  },
+  "camera_zoom": {
+    "en": "Camera Zoom",
+    "fr": "Zoom caméra",
+    "es": "Zoom de cámara",
+    "pt": "Zoom da câmera",
+    "ar": ""
+  },
+  "back": {
+    "en": "Back",
+    "fr": "Retour",
+    "es": "Atrás",
+    "pt": "Voltar",
+    "ar": ""
+  },
+  "settings_button": {
+    "en": "Settings",
+    "fr": "Paramètres",
+    "es": "Ajustes",
+    "pt": "Configurações",
+    "ar": ""
+  },
+  "resume": {
+    "en": "Resume",
+    "fr": "Reprendre",
+    "es": "Reanudar",
+    "pt": "Continuar",
+    "ar": ""
+  },
+  "restart_match": {
+    "en": "Restart Match",
+    "fr": "Recommencer",
+    "es": "Reiniciar partido",
+    "pt": "Reiniciar partida",
+    "ar": ""
+  },
+  "quit_match": {
+    "en": "Quit Match",
+    "fr": "Quitter le match",
+    "es": "Salir del partido",
+    "pt": "Sair da partida",
+    "ar": ""
+  },
+  "paused": {
+    "en": "PAUSED",
+    "fr": "PAUSE",
+    "es": "PAUSA",
+    "pt": "PAUSADO",
+    "ar": ""
+  },
+  "connection_lost": {
+    "en": "Connection lost",
+    "fr": "Connexion perdue",
+    "es": "Conexión perdida",
+    "pt": "Conexão perdida",
+    "ar": ""
+  },
+  "camera_shake": {
+    "en": "Camera Shake",
+    "fr": "Tremblement caméra",
+    "es": "Vibración de cámara",
+    "pt": "Tremor da câmera",
+    "ar": ""
+  },
+  "slow_motion": {
+    "en": "Goal Slow-Motion",
+    "fr": "Ralenti sur but",
+    "es": "Cámara lenta en gol",
+    "pt": "Câmera lenta no gol",
+    "ar": ""
+  },
+  "camera_follow_speed": {
+    "en": "Camera Follow Speed",
+    "fr": "Vitesse de suivi caméra",
+    "es": "Velocidad de seguimiento",
+    "pt": "Velocidade de acompanhamento",
+    "ar": ""
+  },
+  "performance_mode": {
+    "en": "Performance Mode",
+    "fr": "Mode performance",
+    "es": "Modo rendimiento",
+    "pt": "Modo desempenho",
+    "ar": ""
+  },
+  "battery_saver": {
+    "en": "Battery Saver",
+    "fr": "Économie de batterie",
+    "es": "Ahorro de batería",
+    "pt": "Economia de bateria",
+    "ar": ""
+  },
+  "apply": {
+    "en": "Apply",
+    "fr": "Appliquer",
+    "es": "Aplicar",
+    "pt": "Aplicar",
+    "ar": ""
+  },
+  "reset_section": {
+    "en": "Reset",
+    "fr": "Réinitialiser",
+    "es": "Restablecer",
+    "pt": "Redefinir",
+    "ar": ""
+  },
+  "reset_to_defaults": {
+    "en": "Reset to Defaults",
+    "fr": "Réinitialiser les paramètres",
+    "es": "Restablecer valores",
+    "pt": "Redefinir padrões",
+    "ar": ""
+  },
+  "about": {
+    "en": "About",
+    "fr": "À propos",
+    "es": "Acerca de",
+    "pt": "Sobre",
+    "ar": ""
+  },
+  "credits": {
+    "en": "Credits",
+    "fr": "Crédits",
+    "es": "Créditos",
+    "pt": "Créditos",
+    "ar": ""
+  },
+  "profile": {
+    "en": "Profile",
+    "fr": "Profil",
+    "es": "Perfil",
+    "pt": "Perfil",
+    "ar": ""
+  },
+  "profile_coming_soon": {
+    "en": "Profiles - coming soon",
+    "fr": "Profils - bientôt disponible",
+    "es": "Perfiles - próximamente",
+    "pt": "Perfis - em breve",
+    "ar": ""
+  },
+  "player_name": {
+    "en": "Your Name",
+    "fr": "Votre nom",
+    "es": "Tu nombre",
+    "pt": "Seu nome",
+    "ar": ""
+  },
+  "connection_quality_good": {
+    "en": "Good",
+    "fr": "Bonne",
+    "es": "Buena",
+    "pt": "Boa",
+    "ar": ""
+  },
+  "connection_quality_fair": {
+    "en": "Fair",
+    "fr": "Correcte",
+    "es": "Aceptable",
+    "pt": "Razoável",
+    "ar": ""
+  },
+  "connection_quality_poor": {
+    "en": "Poor",
+    "fr": "Faible",
+    "es": "Mala",
+    "pt": "Fraca",
+    "ar": ""
+  },
+  "match_settings_label": {
+    "en": "Match Settings (host)",
+    "fr": "Paramètres du match (hôte)",
+    "es": "Ajustes del partido (host)",
+    "pt": "Configurações da partida (host)",
+    "ar": ""
+  },
+  "retry": {
+    "en": "Retry",
+    "fr": "Réessayer",
+    "es": "Reintentar",
+    "pt": "Tentar novamente",
+    "ar": ""
+  },
+  "return_to_menu": {
+    "en": "Return to Menu",
+    "fr": "Retour au menu",
+    "es": "Volver al menú",
+    "pt": "Voltar ao menu",
+    "ar": ""
+  },
+  "connection_failed_detail": {
+    "en": "Connection failed. The host may be offline or unreachable.",
+    "fr": "Échec de connexion. L'hôte est peut-être hors ligne ou injoignable.",
+    "es": "Conexión fallida. El host puede estar desconectado o inalcanzable.",
+    "pt": "Falha na conexão. O host pode estar offline ou inacessível.",
+    "ar": ""
+  }
+}

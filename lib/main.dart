@@ -10,7 +10,7 @@ import 'games/memory_match/ui/memory_home_screen.dart';
 import 'games/snake/ui/snake_home_screen.dart';
 import 'games/ludo/ui/ludo_home_screen.dart';
 import 'games/chess/chess.dart';
-import 'games/football/ui/football_home_screen.dart';
+import 'games/football/football_game_screen.dart';
 
 void main() {
   runApp(const GameHubApp());
@@ -109,7 +109,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       subtitle: "Nations · Tournois",
       icon: Icons.sports_soccer_rounded,
       color: const Color(0xFF8CE05B),
-      builder: (_) => const FootballHomeScreen(),
+      builder: (_) => const FootballGameScreen(),
     ),
     GameEntry(
       title: "Morpion",

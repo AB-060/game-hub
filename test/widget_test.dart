@@ -11,18 +11,7 @@ import 'package:game_hub/games/memory_match/models/memory_models.dart';
 import 'package:game_hub/games/memory_match/ui/memory_game_screen.dart';
 import 'package:game_hub/games/snake/models/snake_models.dart';
 import 'package:game_hub/games/snake/ui/snake_game_screen.dart';
-import 'package:game_hub/games/football/models/penalty_models.dart';
-import 'package:game_hub/games/football/ui/shootout_screen.dart';
-import 'package:game_hub/games/football/models/team.dart';
-import 'package:game_hub/games/football/models/teams_database.dart';
-import 'package:game_hub/games/football/models/tournament_models.dart';
-import 'package:game_hub/games/football/models/match_models.dart';
-import 'package:game_hub/games/football/engine/match_engine.dart';
-import 'package:game_hub/games/football/engine/tournament_engine.dart';
-import 'package:game_hub/games/football/ui/quick_match_screen.dart';
-import 'package:game_hub/games/football/ui/team_selection_screen.dart';
-import 'package:game_hub/games/football/ui/tournament_bracket_screen.dart';
-import 'package:game_hub/games/football/ui/football_home_screen.dart';
+import 'package:game_hub/games/football/football_game_screen.dart';
 import 'package:game_hub/games/ludo/models/ludo_board.dart';
 import 'package:game_hub/games/ludo/ui/ludo_game_screen.dart';
 
@@ -369,83 +358,6 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
   });
 
-  for (final difficulty in PenaltyDifficulty.values) {
-    for (final mode in PenaltyMode.values) {
-      testWidgets('Penalty : ${difficulty.name}/${mode.name} joue un tir complet sans plantage',
-          (tester) async {
-        await _setScreenSize(tester, const Size(390, 844));
-        await tester.pumpWidget(MaterialApp(
-          home: ShootoutScreen(difficulty: difficulty, mode: mode),
-        ));
-        await tester.pump();
-        await tester.tap(find.text("Centre"));
-        await tester.pump();
-        // Délai de réaction du gardien + résolution + éventuel sifflet.
-        await tester.pump(const Duration(seconds: 2));
-      });
-    }
-  }
-
-  testWidgets('Penalty : mode entraînement joue les 5 tirs jusqu\'au bout', (tester) async {
-    await _setScreenSize(tester, const Size(390, 844));
-    await tester.pumpWidget(const MaterialApp(
-      home: ShootoutScreen(
-        difficulty: PenaltyDifficulty.easy,
-        mode: PenaltyMode.practice,
-      ),
-    ));
-    await tester.pump();
-    for (int i = 0; i < 5; i++) {
-      final button = find.text("Gauche");
-      if (button.evaluate().isEmpty) break;
-      await tester.tap(button);
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 2));
-    }
-    expect(find.text("Rejouer"), findsOneWidget);
-  });
-
-  testWidgets('Penalty : partie sur tous les écrans sans overflow', (tester) async {
-    for (final size in _screenSizes) {
-      await _setScreenSize(tester, size);
-      await tester.pumpWidget(const MaterialApp(
-        home: ShootoutScreen(
-          difficulty: PenaltyDifficulty.hard,
-          mode: PenaltyMode.suddenDeath,
-        ),
-      ));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-    }
-  });
-
-  testWidgets('Penalty : depuis le hub, choisir un mode puis démarrer une partie',
-      (tester) async {
-    await _setScreenSize(tester, const Size(390, 844));
-    await tester.pumpWidget(const GameHubApp());
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 800));
-
-    await tester.tap(find.text("Football"), warnIfMissed: false);
-    await tester.pump();
-    for (int i = 0; i < 10; i++) {
-      await tester.pump(const Duration(milliseconds: 200));
-    }
-
-    await tester.ensureVisible(find.text("Mort subite"));
-    await tester.pump();
-    await tester.tap(find.text("Mort subite"));
-    await tester.pump();
-    await tester.tap(find.text("Difficile"));
-    await tester.pump();
-
-    await tester.ensureVisible(find.widgetWithText(OutlinedButton, "Tirs au but"));
-    await tester.pump();
-    await tester.tap(find.widgetWithText(OutlinedButton, "Tirs au but"));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500));
-  });
-
   for (final n in [2, 3, 4]) {
     testWidgets('Ludo : partie IA contre IA à $n joueurs tourne sans plantage', (tester) async {
       await _setScreenSize(tester, const Size(390, 844));
@@ -548,164 +460,27 @@ void main() {
   });
 
   // ─────────────── Football ───────────────
+  //
+  // Football's gameplay is now a vendored Godot project (see
+  // lib/games/football/soccer-course/), embedded natively per-platform by
+  // FootballGameScreen: an AndroidView on Android, an X11/GtkSocket-backed
+  // LinuxGodotEmbedView on Linux, and an honest "not supported" message
+  // elsewhere. This suite runs on Linux, and there is no exported Godot
+  // Linux binary in this checkout (that requires a human to run the Godot
+  // Editor, see EXPORT.md) — so on this platform the screen should take the
+  // "not exported yet" path rather than crashing or faking success.
 
-  test('Mauritania is the default team and appears first', () {
-    expect(TeamsDatabase.defaultTeam.id, 'mru');
-    expect(TeamsDatabase.all.first.name, 'Mauritanie');
-    expect(TeamsDatabase.defaultTeam.overall, 73);
-  });
-
-  test('team database has no duplicate ids and covers every continent', () {
-    final ids = TeamsDatabase.all.map((t) => t.id).toList();
-    expect(ids.toSet().length, ids.length);
-    for (final c in Continent.values) {
-      expect(TeamsDatabase.byContinent(c), isNotEmpty, reason: '${c.name} should have teams');
-    }
-  });
-
-  test('MatchEngine: a full 90-minute simulation completes with sensible events', () {
-    final home = TeamsDatabase.byId('fra');
-    final away = TeamsDatabase.byId('mru');
-    final engine = MatchEngine(home: home, away: away, weather: Weather.sun);
-    engine.start();
-    while (!engine.finished) {
-      engine.advanceMinute();
-    }
-    expect(engine.minute, greaterThanOrEqualTo(90));
-    expect(engine.allEvents.first.type, MatchEventType.kickoff);
-    expect(engine.allEvents.last.type, MatchEventType.fullTime);
-  });
-
-  test('TournamentEngine: an 8-team bracket reaches a champion', () {
-    final teams = TeamsDatabase.all.take(8).toList();
-    final engine =
-        TournamentEngine(type: CompetitionType.worldCup, participants: teams, shuffleSeed: false);
-    while (!engine.isComplete) {
-      for (final f in List.of(engine.currentRound.fixtures)) {
-        if (!f.isResolved) engine.resolveFixture(f, f.home.id);
-      }
-    }
-    expect(engine.champion, isNotNull);
-    expect(engine.runnerUp, isNotNull);
-  });
-
-  testWidgets('Football : le hub affiche la Mauritanie par défaut', (tester) async {
+  testWidgets('Football : affiche un message honnête sans plantage sur cette plateforme',
+      (tester) async {
     await _setScreenSize(tester, const Size(390, 844));
-    await tester.pumpWidget(const MaterialApp(home: FootballHomeScreen()));
+    await tester.pumpWidget(const MaterialApp(home: FootballGameScreen()));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
-    expect(find.text("Mauritanie"), findsOneWidget);
-  });
-
-  testWidgets('Football : sélectionner une équipe depuis Continent → Pays', (tester) async {
-    await _setScreenSize(tester, const Size(390, 844));
-    Team? result;
-    await tester.pumpWidget(MaterialApp(
-      home: Builder(
-        builder: (context) => ElevatedButton(
-          onPressed: () async {
-            result = await Navigator.of(context).push<Team>(MaterialPageRoute(
-              builder: (_) => const TeamSelectionScreen(title: "Choisis ta sélection"),
-            ));
-          },
-          child: const Text("open"),
-        ),
-      ),
-    ));
-    await tester.tap(find.text("open"));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
-    await tester.tap(find.text("Europe"));
-    await tester.pump();
-    await tester.tap(find.text("France").first);
-    await tester.pump();
-    expect(result?.id, 'fra');
-  });
-
-  testWidgets('Football : Match rapide simule un match complet sans plantage', (tester) async {
-    await _setScreenSize(tester, const Size(390, 844));
-    await tester.pumpWidget(MaterialApp(
-      home: QuickMatchScreen(
-        home: TeamsDatabase.byId('mru'),
-        away: TeamsDatabase.byId('sen'),
-        weather: Weather.rain,
-      ),
-    ));
-    await tester.pump();
-    for (int i = 0; i < 120; i++) {
-      await tester.pump(const Duration(milliseconds: 250));
-      if (find.textContaining("gagne").evaluate().isNotEmpty ||
-          find.text("Match nul !").evaluate().isNotEmpty) {
-        break;
-      }
-    }
-    expect(
-      find.textContaining("gagne").evaluate().isNotEmpty ||
-          find.text("Match nul !").evaluate().isNotEmpty,
-      isTrue,
-    );
-  });
-
-  testWidgets('Football : Tirs au but avec contexte équipes affiche les drapeaux', (tester) async {
-    await _setScreenSize(tester, const Size(390, 844));
-    await tester.pumpWidget(MaterialApp(
-      home: ShootoutScreen(
-        difficulty: PenaltyDifficulty.expert,
-        mode: PenaltyMode.practice,
-        homeTeam: TeamsDatabase.byId('mru'),
-        awayTeam: TeamsDatabase.byId('mar'),
-      ),
-    ));
-    await tester.pump();
-    expect(find.textContaining("Mauritanie"), findsWidgets);
-  });
-
-  testWidgets('Football : tournoi à 4 équipes se joue jusqu\'au podium', (tester) async {
-    await _setScreenSize(tester, const Size(390, 844));
-    final teams = [
-      TeamsDatabase.byId('mru'),
-      TeamsDatabase.byId('sen'),
-      TeamsDatabase.byId('mar'),
-      TeamsDatabase.byId('dza'),
-    ];
-    await tester.pumpWidget(MaterialApp(
-      home: TournamentBracketScreen(type: CompetitionType.afcon, participants: teams),
-    ));
-    await tester.pump();
-
-    // Joue les demi-finales puis la finale (2 tours) en laissant chaque
-    // match rapide se dérouler jusqu'au bout.
-    for (int round = 0; round < 2; round++) {
-      final playButtons = find.byIcon(Icons.play_circle_fill_rounded);
-      final count = playButtons.evaluate().length;
-      for (int i = 0; i < count; i++) {
-        await tester.tap(find.byIcon(Icons.play_circle_fill_rounded).first);
-        await tester.pump();
-        for (int t = 0; t < 120; t++) {
-          await tester.pump(const Duration(milliseconds: 250));
-          if (find.textContaining("gagne").evaluate().isNotEmpty ||
-              find.text("Match nul !").evaluate().isNotEmpty) {
-            break;
-          }
-        }
-        // Revenir au tableau du tournoi.
-        await tester.pump(const Duration(milliseconds: 200));
-        Navigator.of(tester.element(find.byType(Scaffold).first));
-        await tester.pageBack();
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-      }
-    }
-
-    expect(find.textContaining("remporte le tournoi"), findsOneWidget);
-  });
-
-  testWidgets('Football : plateau tient sur tous les écrans sans overflow', (tester) async {
-    for (final size in _screenSizes) {
-      await _setScreenSize(tester, size);
-      await tester.pumpWidget(const MaterialApp(home: FootballHomeScreen()));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-    }
+    expect(find.text("Football"), findsOneWidget);
+    // On Linux (this test environment) with no exported binary present,
+    // FootballGameScreen must show the "not exported yet" message pointing
+    // at EXPORT.md rather than attempting to launch anything.
+    expect(find.textContaining("Godot").evaluate().isNotEmpty, isTrue);
+    expect(find.textContaining("EXPORT.md").evaluate().isNotEmpty, isTrue);
   });
 }
