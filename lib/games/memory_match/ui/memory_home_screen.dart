@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../home/particle_background.dart';
 import '../../../services/game_save_service.dart';
 import '../../../services/game_stats_service.dart';
 import '../../../theme/app_colors.dart';
 import '../../../widgets/glass_card.dart';
+import '../../../widgets/setup_wizard.dart';
 import '../models/memory_models.dart';
 import '../services/memory_records_service.dart';
 import 'memory_game_screen.dart';
@@ -58,7 +58,54 @@ class _MemoryHomeScreenState extends State<MemoryHomeScreen> {
     });
   }
 
+  List<WizardStep> _buildSteps() {
+    return [
+      WizardStep(
+        title: "Choisis un thème",
+        grid: true,
+        options: MemoryTheme.values
+            .map(
+              (t) => WizardOption(
+                label: t.label,
+                emoji: t.icon,
+                selected: _theme == t,
+                onSelect: () => setState(() => _theme = t),
+              ),
+            )
+            .toList(),
+      ),
+      WizardStep(
+        title: "Quelle difficulté ?",
+        options: MemoryDifficulty.values
+            .map(
+              (d) => WizardOption(
+                label: d.label,
+                subtitle: "Grille ${d.columns}x${d.rows}",
+                icon: Icons.grid_view_rounded,
+                selected: _difficulty == d,
+                onSelect: () => _onDifficultyChanged(d),
+              ),
+            )
+            .toList(),
+      ),
+    ];
+  }
+
+  void _openSetup() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => SetupWizard(
+          gameTitle: "Memory",
+          stepsBuilder: _buildSteps,
+          onComplete: _startNewGame,
+        ),
+      ),
+    );
+  }
+
   void _startNewGame() {
+    // Ferme le formulaire pour que le retour depuis la partie ramène ici.
+    Navigator.of(context).pop();
     Navigator.of(context)
         .push(MaterialPageRoute(
           builder: (_) => MemoryGameScreen(
@@ -122,38 +169,24 @@ class _MemoryHomeScreenState extends State<MemoryHomeScreen> {
                                 _resumeCard(),
                                 const SizedBox(height: 24),
                               ],
-                              Text(
-                                "Nouvelle partie",
-                                style: GoogleFonts.poppins(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              _sectionLabel("Thème"),
-                              const SizedBox(height: 8),
-                              _themePicker(),
-                              const SizedBox(height: 20),
-                              _sectionLabel("Difficulté"),
-                              const SizedBox(height: 8),
-                              _difficultyPicker(),
-                              const SizedBox(height: 12),
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   const Icon(Icons.emoji_events_rounded,
                                       size: 16, color: kAccent),
                                   const SizedBox(width: 6),
-                                  Text(
-                                    "Record : ${_formatTime(_bestTime)}",
-                                    style: const TextStyle(color: kMuted, fontSize: 13),
+                                  Flexible(
+                                    child: Text(
+                                      "Record ${_difficulty.label} : ${_formatTime(_bestTime)}",
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(color: kMuted, fontSize: 13),
+                                    ),
                                   ),
                                 ],
                               ),
                               const SizedBox(height: 24),
                               ElevatedButton.icon(
-                                onPressed: _startNewGame,
+                                onPressed: _openSetup,
                                 icon: const Icon(Icons.play_arrow_rounded),
                                 label: const Text("Nouvelle partie"),
                               ),
@@ -166,13 +199,6 @@ class _MemoryHomeScreenState extends State<MemoryHomeScreen> {
                 ),
         ],
       ),
-    );
-  }
-
-  Widget _sectionLabel(String text) {
-    return Text(
-      text,
-      style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: kMuted),
     );
   }
 
@@ -216,62 +242,4 @@ class _MemoryHomeScreenState extends State<MemoryHomeScreen> {
     );
   }
 
-  Widget _themePicker() {
-    return GridView.count(
-      crossAxisCount: 3,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: 10,
-      crossAxisSpacing: 10,
-      childAspectRatio: 1.05,
-      children: MemoryTheme.values.map((t) {
-        final selected = _theme == t;
-        return InkWell(
-          borderRadius: BorderRadius.circular(14),
-          onTap: () => setState(() => _theme = t),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            decoration: BoxDecoration(
-              color: selected ? kAccent.withOpacity(0.16) : Colors.white.withOpacity(0.04),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: selected ? kAccent : Colors.white12),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(t.icon, style: const TextStyle(fontSize: 22)),
-                const SizedBox(height: 4),
-                Text(
-                  t.label,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: selected ? Colors.white : Colors.white54,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      }).toList(),
-    );
-  }
-
-  Widget _difficultyPicker() {
-    return Row(
-      children: MemoryDifficulty.values.map((d) {
-        final selected = _difficulty == d;
-        return Expanded(
-          child: Padding(
-            padding: EdgeInsets.only(right: d == MemoryDifficulty.values.last ? 0 : 8),
-            child: SelectableChip(
-              selected: selected,
-              label: d.label,
-              onTap: () => _onDifficultyChanged(d),
-            ),
-          ),
-        );
-      }).toList(),
-    );
-  }
 }

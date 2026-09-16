@@ -44,29 +44,5 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-# Godot (soccer-course)
-lib/games/football/soccer-course/.godot/
-lib/games/football/soccer-course/.import/
-lib/games/football/soccer-course/export.cfg
-lib/games/football/soccer-course/export_credentials.cfg
-lib/games/football/soccer-course/*.translation
-lib/games/football/soccer-course/.mono/
-lib/games/football/soccer-course/data_*/
-lib/games/football/soccer-course/mono_crash.*.json
-
-# Godot Web export output (produced by a human via the Godot Editor, see
-# lib/games/football/soccer-course/EXPORT.md). The directory itself is kept
-# (via .gitkeep) so Flutter's asset bundling doesn't break on a fresh clone;
-# its generated contents are not committed.
-lib/games/football/soccer-course/web-export/*
-!lib/games/football/soccer-course/web-export/.gitkeep
-
-# Extracted Android Gradle build template (regenerable build tooling, not
-# source - see EXPORT.md for how to regenerate: extract android_source.zip
-# from the installed Godot export templates, or use the Editor's "Install
-# Android Build Template" menu action). ~200MB of gradle wrapper/AAR
-# binaries with nothing to review as source.
-lib/games/football/soccer-course/android/build/
-
 # Claude Code's local project state - not part of the shipped project.
 .claude/

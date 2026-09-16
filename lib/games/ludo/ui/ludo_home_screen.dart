@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../home/particle_background.dart';
 import '../../../services/game_save_service.dart';
 import '../../../services/game_stats_service.dart';
 import '../../../theme/app_colors.dart';
 import '../../../widgets/glass_card.dart';
+import '../../../widgets/setup_wizard.dart';
 import '../models/ludo_board.dart';
 import 'ludo_game_screen.dart';
 
@@ -53,7 +53,130 @@ class _LudoHomeScreenState extends State<LudoHomeScreen> {
     });
   }
 
+  List<WizardStep> _buildSteps() {
+    return [
+      WizardStep(
+        title: "Combien de joueurs ?",
+        options: [2, 3, 4]
+            .map(
+              (n) => WizardOption(
+                label: "$n joueurs",
+                icon: Icons.groups_rounded,
+                selected: _playerCount == n,
+                onSelect: () => setState(() {
+                  _playerCount = n;
+                  _resetSeats();
+                }),
+              ),
+            )
+            .toList(),
+      ),
+      WizardStep(
+        title: "Qui tient chaque couleur ?",
+        hint: "Touche « Humain » ou « IA » pour chaque couleur.",
+        custom: _seatsStep,
+      ),
+      WizardStep(
+        title: "Niveau de l'IA",
+        options: LudoDifficulty.values
+            .map(
+              (d) => WizardOption(
+                label: d.label,
+                icon: Icons.smart_toy_rounded,
+                selected: _difficulty == d,
+                onSelect: () => setState(() => _difficulty = d),
+              ),
+            )
+            .toList(),
+      ),
+    ];
+  }
+
+  /// Étape sur mesure : plusieurs réglages sur une même page, validés par le
+  /// bouton du wizard plutôt qu'en enchaînant au premier appui.
+  Widget _seatsStep(VoidCallback refresh) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (final color in _seats.keys)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: Row(
+              children: [
+                Container(
+                  width: 18,
+                  height: 18,
+                  decoration: BoxDecoration(
+                    color: color.color,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white24),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    color.label,
+                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+                  ),
+                ),
+                ToggleButtons(
+                  borderRadius: BorderRadius.circular(10),
+                  isSelected: [
+                    _seats[color] == SeatType.human,
+                    _seats[color] == SeatType.ai,
+                  ],
+                  onPressed: (i) {
+                    setState(() => _seats[color] = i == 0 ? SeatType.human : SeatType.ai);
+                    refresh();
+                  },
+                  children: const [
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 12),
+                      child: Text("Humain"),
+                    ),
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 12),
+                      child: Text("IA"),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton.icon(
+            onPressed: () {
+              setState(() {
+                for (final c in _seats.keys) {
+                  _seats[c] = SeatType.ai;
+                }
+              });
+              refresh();
+            },
+            icon: const Icon(Icons.smart_toy_rounded, size: 16),
+            label: const Text("Tout en IA (spectateur)"),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _openSetup() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => SetupWizard(
+          gameTitle: "Ludo",
+          stepsBuilder: _buildSteps,
+          onComplete: _startNewGame,
+        ),
+      ),
+    );
+  }
+
   void _startNewGame() {
+    // Ferme le formulaire pour que le retour depuis la partie ramène ici.
+    Navigator.of(context).pop();
     Navigator.of(context)
         .push(MaterialPageRoute(
           builder: (_) => LudoGameScreen(
@@ -121,42 +244,8 @@ class _LudoHomeScreenState extends State<LudoHomeScreen> {
                                 _resumeCard(),
                                 const SizedBox(height: 24),
                               ],
-                              Text(
-                                "Nouvelle partie",
-                                style: GoogleFonts.poppins(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              _sectionLabel("Nombre de joueurs"),
-                              const SizedBox(height: 8),
-                              _playerCountPicker(),
-                              const SizedBox(height: 20),
-                              _sectionLabel("Sièges"),
-                              const SizedBox(height: 8),
-                              _seatsPicker(),
-                              const SizedBox(height: 8),
-                              Align(
-                                alignment: Alignment.centerRight,
-                                child: TextButton.icon(
-                                  onPressed: () => setState(() {
-                                    for (final c in _seats.keys) {
-                                      _seats[c] = SeatType.ai;
-                                    }
-                                  }),
-                                  icon: const Icon(Icons.smart_toy_rounded, size: 16),
-                                  label: const Text("Tout en IA (spectateur)"),
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              _sectionLabel("Difficulté de l'IA"),
-                              const SizedBox(height: 8),
-                              _difficultyPicker(),
-                              const SizedBox(height: 28),
                               ElevatedButton.icon(
-                                onPressed: _startNewGame,
+                                onPressed: _openSetup,
                                 icon: const Icon(Icons.casino_rounded),
                                 label: const Text("Nouvelle partie"),
                               ),
@@ -169,13 +258,6 @@ class _LudoHomeScreenState extends State<LudoHomeScreen> {
                 ),
         ],
       ),
-    );
-  }
-
-  Widget _sectionLabel(String text) {
-    return Text(
-      text,
-      style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: kMuted),
     );
   }
 
@@ -221,74 +303,4 @@ class _LudoHomeScreenState extends State<LudoHomeScreen> {
     );
   }
 
-  Widget _playerCountPicker() {
-    return Row(
-      children: [2, 3, 4].map((n) {
-        final selected = _playerCount == n;
-        return Expanded(
-          child: Padding(
-            padding: EdgeInsets.only(right: n == 4 ? 0 : 8),
-            child: SelectableChip(
-              selected: selected,
-              label: "$n joueurs",
-              onTap: () => setState(() {
-                _playerCount = n;
-                _resetSeats();
-              }),
-            ),
-          ),
-        );
-      }).toList(),
-    );
-  }
-
-  Widget _seatsPicker() {
-    return Column(
-      children: _seats.keys.map((color) {
-        final seat = _seats[color]!;
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: Row(
-            children: [
-              Container(
-                width: 16,
-                height: 16,
-                decoration: BoxDecoration(color: color.color, shape: BoxShape.circle),
-              ),
-              const SizedBox(width: 10),
-              Expanded(child: Text(color.label, style: const TextStyle(fontWeight: FontWeight.w600))),
-              ToggleButtons(
-                borderRadius: BorderRadius.circular(10),
-                isSelected: [seat == SeatType.human, seat == SeatType.ai],
-                onPressed: (i) => setState(() {
-                  _seats[color] = i == 0 ? SeatType.human : SeatType.ai;
-                }),
-                children: const [
-                  Padding(padding: EdgeInsets.symmetric(horizontal: 10), child: Text("Humain")),
-                  Padding(padding: EdgeInsets.symmetric(horizontal: 10), child: Text("IA")),
-                ],
-              ),
-            ],
-          ),
-        );
-      }).toList(),
-    );
-  }
-
-  Widget _difficultyPicker() {
-    return Row(
-      children: LudoDifficulty.values.map((d) {
-        return Expanded(
-          child: Padding(
-            padding: EdgeInsets.only(right: d == LudoDifficulty.values.last ? 0 : 8),
-            child: SelectableChip(
-              selected: _difficulty == d,
-              label: d.label,
-              onTap: () => setState(() => _difficulty = d),
-            ),
-          ),
-        );
-      }).toList(),
-    );
-  }
 }

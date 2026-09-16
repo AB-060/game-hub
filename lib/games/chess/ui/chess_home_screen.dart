@@ -1,10 +1,10 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../home/particle_background.dart';
 import '../../../theme/app_colors.dart';
+import '../../../widgets/setup_wizard.dart';
 import '../models/chess_models.dart';
 import '../services/persistence_service.dart';
 import 'chess_game_screen.dart';
@@ -46,7 +46,87 @@ class _ChessHomeScreenState extends State<ChessHomeScreen> {
     });
   }
 
+  /// Les étapes du formulaire. La difficulté ne concerne que le jeu contre
+  /// l'IA : la question disparaît en mode 2 joueurs.
+  List<WizardStep> _buildSteps() {
+    return [
+      WizardStep(
+        title: "Comment veux-tu jouer ?",
+        options: [
+          WizardOption(
+            label: "Contre l'IA",
+            subtitle: "Affronte l'ordinateur",
+            icon: Icons.smart_toy_rounded,
+            selected: _vsAi,
+            onSelect: () => setState(() => _vsAi = true),
+          ),
+          WizardOption(
+            label: "2 joueurs",
+            subtitle: "Sur le même appareil",
+            icon: Icons.people_alt_rounded,
+            selected: !_vsAi,
+            onSelect: () => setState(() => _vsAi = false),
+          ),
+        ],
+      ),
+      if (_vsAi)
+        WizardStep(
+          title: "Niveau de l'IA",
+          options: Difficulty.values
+              .map(
+                (d) => WizardOption(
+                  label: d.label,
+                  subtitle: d.description,
+                  selected: _difficulty == d,
+                  onSelect: () => setState(() => _difficulty = d),
+                ),
+              )
+              .toList(),
+        ),
+      WizardStep(
+        title: _vsAi ? "Tu joues avec quelle couleur ?" : "Qui es-tu ?",
+        hint: "Les blancs commencent toujours.",
+        options: [
+          WizardOption(
+            label: "Blancs",
+            subtitle: "Tu commences",
+            leading: const ChessPieceIcon(
+              piece: ChessPiece(PieceType.king, PieceColor.white),
+              size: 34,
+            ),
+            selected: _color == PieceColor.white,
+            onSelect: () => setState(() => _color = PieceColor.white),
+          ),
+          WizardOption(
+            label: "Noirs",
+            subtitle: _vsAi ? "L'IA commence" : "Les blancs commencent",
+            leading: const ChessPieceIcon(
+              piece: ChessPiece(PieceType.king, PieceColor.black),
+              size: 34,
+            ),
+            selected: _color == PieceColor.black,
+            onSelect: () => setState(() => _color = PieceColor.black),
+          ),
+        ],
+      ),
+    ];
+  }
+
+  void _openSetup() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => SetupWizard(
+          gameTitle: "Échecs",
+          stepsBuilder: _buildSteps,
+          onComplete: _startNewGame,
+        ),
+      ),
+    );
+  }
+
   void _startNewGame() {
+    // Ferme le formulaire pour que le retour depuis la partie ramène ici.
+    Navigator.of(context).pop();
     Navigator.of(context)
         .push(MaterialPageRoute(
           builder: (_) => ChessGameScreen(
@@ -88,63 +168,28 @@ class _ChessHomeScreenState extends State<ChessHomeScreen> {
           _loading
               ? const Center(child: CircularProgressIndicator())
               : SafeArea(
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      return SingleChildScrollView(
-                        padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-                        child: ConstrainedBox(
-                          constraints: BoxConstraints(minHeight: constraints.maxHeight - 32),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              _statsCard(),
-                              const SizedBox(height: 24),
-                              if (_savedGame != null) ...[
-                                _resumeCard(),
-                                const SizedBox(height: 24),
-                              ],
-                              Text(
-                                "Nouvelle partie",
-                                style: GoogleFonts.poppins(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              _modePicker(),
-                              const SizedBox(height: 20),
-                              if (_vsAi) ...[
-                                _sectionLabel("Difficulté"),
-                                const SizedBox(height: 8),
-                                _difficultyPicker(),
-                                const SizedBox(height: 20),
-                              ],
-                              _sectionLabel(_vsAi ? "Jouer avec" : "Blancs commencent"),
-                              const SizedBox(height: 8),
-                              _colorPicker(),
-                              const SizedBox(height: 28),
-                              ElevatedButton.icon(
-                                onPressed: _startNewGame,
-                                icon: const Icon(Icons.play_arrow_rounded),
-                                label: const Text("Nouvelle partie"),
-                              ),
-                            ],
-                          ),
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _statsCard(),
+                        const SizedBox(height: 24),
+                        if (_savedGame != null) ...[
+                          _resumeCard(),
+                          const SizedBox(height: 24),
+                        ],
+                        ElevatedButton.icon(
+                          onPressed: _openSetup,
+                          icon: const Icon(Icons.play_arrow_rounded),
+                          label: const Text("Nouvelle partie"),
                         ),
-                      );
-                    },
+                      ],
+                    ),
                   ),
                 ),
         ],
       ),
-    );
-  }
-
-  Widget _sectionLabel(String text) {
-    return Text(
-      text,
-      style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: kMuted),
     );
   }
 
@@ -221,148 +266,4 @@ class _ChessHomeScreenState extends State<ChessHomeScreen> {
     );
   }
 
-  Widget _modePicker() {
-    return Row(
-      children: [
-        Expanded(
-          child: _modeOption(
-            selected: _vsAi,
-            icon: Icons.smart_toy_rounded,
-            label: "Contre l'IA",
-            onTap: () => setState(() => _vsAi = true),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _modeOption(
-            selected: !_vsAi,
-            icon: Icons.people_alt_rounded,
-            label: "2 joueurs",
-            onTap: () => setState(() => _vsAi = false),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _modeOption({
-    required bool selected,
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(14),
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        decoration: BoxDecoration(
-          color: selected ? kAccent.withOpacity(0.16) : Colors.white.withOpacity(0.04),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: selected ? kAccent : Colors.white12,
-            width: selected ? 1.5 : 1,
-          ),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, color: selected ? kAccent : Colors.white38, size: 22),
-            const SizedBox(height: 6),
-            Text(
-              label,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 13,
-                color: selected ? Colors.white : Colors.white54,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _difficultyPicker() {
-    return Column(
-      children: Difficulty.values.map((d) {
-        final selected = _difficulty == d;
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(14),
-            onTap: () => setState(() => _difficulty = d),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: selected ? kAccent.withOpacity(0.16) : Colors.white.withOpacity(0.04),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: selected ? kAccent : Colors.white12,
-                  width: selected ? 1.5 : 1,
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    selected ? Icons.radio_button_checked : Icons.radio_button_off,
-                    color: selected ? kAccent : Colors.white38,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(d.label, style: const TextStyle(fontWeight: FontWeight.bold)),
-                        Text(
-                          d.description,
-                          style: const TextStyle(fontSize: 12, color: Colors.white54),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      }).toList(),
-    );
-  }
-
-  Widget _colorPicker() {
-    return Row(
-      children: [
-        Expanded(child: _colorOption(PieceColor.white, "Blancs")),
-        const SizedBox(width: 12),
-        Expanded(child: _colorOption(PieceColor.black, "Noirs")),
-      ],
-    );
-  }
-
-  Widget _colorOption(PieceColor color, String label) {
-    final selected = _color == color;
-    return InkWell(
-      borderRadius: BorderRadius.circular(14),
-      onTap: () => setState(() => _color = color),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        decoration: BoxDecoration(
-          color: selected ? kAccent.withOpacity(0.16) : Colors.white.withOpacity(0.04),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: selected ? kAccent : Colors.white12,
-            width: selected ? 1.5 : 1,
-          ),
-        ),
-        child: Column(
-          children: [
-            ChessPieceIcon(piece: ChessPiece(PieceType.king, color), size: 40),
-            const SizedBox(height: 8),
-            Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
-          ],
-        ),
-      ),
-    );
-  }
 }

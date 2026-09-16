@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../home/particle_background.dart';
 import '../../../services/game_save_service.dart';
 import '../../../services/game_stats_service.dart';
 import '../../../theme/app_colors.dart';
 import '../../../widgets/glass_card.dart';
+import '../../../widgets/setup_wizard.dart';
 import '../models/ttt_models.dart';
 import 'tic_tac_toe_game_screen.dart';
 
 const _statsService = GameStatsService('tictactoe');
 const _saveService = GameSaveService('tictactoe');
 
-/// Écran d'accueil du Morpion : mode (IA ou 2 joueurs), difficulté, taille
-/// de grille, symbole, reprise de partie et statistiques.
+/// Écran d'accueil du Morpion : statistiques, reprise de partie et accès au
+/// formulaire de configuration (une question par page).
 class TicTacToeHomeScreen extends StatefulWidget {
   const TicTacToeHomeScreen({super.key});
 
@@ -48,7 +48,99 @@ class _TicTacToeHomeScreenState extends State<TicTacToeHomeScreen> {
     });
   }
 
+  /// Les étapes du formulaire. La difficulté et le symbole n'ont de sens que
+  /// face à l'IA : les questions disparaissent en mode 2 joueurs.
+  List<WizardStep> _buildSteps() {
+    return [
+      WizardStep(
+        title: "Comment veux-tu jouer ?",
+        options: [
+          WizardOption(
+            label: "Contre l'IA",
+            subtitle: "Affronte l'ordinateur",
+            icon: Icons.smart_toy_rounded,
+            selected: _vsAi,
+            onSelect: () => setState(() => _vsAi = true),
+          ),
+          WizardOption(
+            label: "2 joueurs",
+            subtitle: "Sur le même appareil",
+            icon: Icons.people_alt_rounded,
+            selected: !_vsAi,
+            onSelect: () => setState(() => _vsAi = false),
+          ),
+        ],
+      ),
+      WizardStep(
+        title: "Taille de la grille",
+        hint: _boardSize == TttBoardSize.size3
+            ? "3 symboles alignés pour gagner."
+            : "4 symboles alignés pour gagner.",
+        options: TttBoardSize.values
+            .map(
+              (s) => WizardOption(
+                label: s.label,
+                subtitle: "${s.winLength} alignés pour gagner",
+                icon: Icons.grid_on_rounded,
+                selected: _boardSize == s,
+                onSelect: () => setState(() => _boardSize = s),
+              ),
+            )
+            .toList(),
+      ),
+      if (_vsAi) ...[
+        WizardStep(
+          title: "Niveau de l'IA",
+          options: TttDifficulty.values
+              .map(
+                (d) => WizardOption(
+                  label: d.label,
+                  subtitle: d.description,
+                  selected: _difficulty == d,
+                  onSelect: () => setState(() => _difficulty = d),
+                ),
+              )
+              .toList(),
+        ),
+        WizardStep(
+          title: "Ton symbole",
+          hint: "X commence toujours la partie.",
+          options: [
+            WizardOption(
+              label: "X",
+              subtitle: "Tu commences",
+              icon: Icons.close_rounded,
+              selected: _mark == PlayerMark.x,
+              onSelect: () => setState(() => _mark = PlayerMark.x),
+            ),
+            WizardOption(
+              label: "O",
+              subtitle: "L'IA commence",
+              icon: Icons.circle_outlined,
+              selected: _mark == PlayerMark.o,
+              onSelect: () => setState(() => _mark = PlayerMark.o),
+            ),
+          ],
+        ),
+      ],
+    ];
+  }
+
+  void _openSetup() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => SetupWizard(
+          gameTitle: "Morpion",
+          stepsBuilder: _buildSteps,
+          onComplete: _startNewGame,
+        ),
+      ),
+    );
+  }
+
   void _startNewGame() {
+    // Ferme le formulaire pour que le retour depuis la partie ramène ici.
+    Navigator.of(context).pop();
     Navigator.of(context)
         .push(MaterialPageRoute(
           builder: (_) => TicTacToeGameScreen(
@@ -94,67 +186,28 @@ class _TicTacToeHomeScreenState extends State<TicTacToeHomeScreen> {
           _loading
               ? const Center(child: CircularProgressIndicator())
               : SafeArea(
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      return SingleChildScrollView(
-                        padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-                        child: ConstrainedBox(
-                          constraints: BoxConstraints(minHeight: constraints.maxHeight - 32),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              _statsCard(),
-                              const SizedBox(height: 24),
-                              if (_savedGame != null) ...[
-                                _resumeCard(),
-                                const SizedBox(height: 24),
-                              ],
-                              Text(
-                                "Nouvelle partie",
-                                style: GoogleFonts.poppins(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              _modePicker(),
-                              const SizedBox(height: 20),
-                              _sectionLabel("Taille de la grille"),
-                              const SizedBox(height: 8),
-                              _sizePicker(),
-                              const SizedBox(height: 20),
-                              if (_vsAi) ...[
-                                _sectionLabel("Difficulté"),
-                                const SizedBox(height: 8),
-                                _difficultyPicker(),
-                                const SizedBox(height: 20),
-                                _sectionLabel("Ton symbole"),
-                                const SizedBox(height: 8),
-                                _markPicker(),
-                                const SizedBox(height: 28),
-                              ],
-                              ElevatedButton.icon(
-                                onPressed: _startNewGame,
-                                icon: const Icon(Icons.play_arrow_rounded),
-                                label: const Text("Nouvelle partie"),
-                              ),
-                            ],
-                          ),
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _statsCard(),
+                        const SizedBox(height: 24),
+                        if (_savedGame != null) ...[
+                          _resumeCard(),
+                          const SizedBox(height: 24),
+                        ],
+                        ElevatedButton.icon(
+                          onPressed: _openSetup,
+                          icon: const Icon(Icons.play_arrow_rounded),
+                          label: const Text("Nouvelle partie"),
                         ),
-                      );
-                    },
+                      ],
+                    ),
                   ),
                 ),
         ],
       ),
-    );
-  }
-
-  Widget _sectionLabel(String text) {
-    return Text(
-      text,
-      style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: kMuted),
     );
   }
 
@@ -196,86 +249,6 @@ class _TicTacToeHomeScreenState extends State<TicTacToeHomeScreen> {
           ElevatedButton(onPressed: _resumeGame, child: const Text("Reprendre")),
         ],
       ),
-    );
-  }
-
-  Widget _modePicker() {
-    return Row(
-      children: [
-        Expanded(
-          child: SelectableChip(
-            selected: _vsAi,
-            icon: Icons.smart_toy_rounded,
-            label: "Contre l'IA",
-            onTap: () => setState(() => _vsAi = true),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: SelectableChip(
-            selected: !_vsAi,
-            icon: Icons.people_alt_rounded,
-            label: "2 joueurs",
-            onTap: () => setState(() => _vsAi = false),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _sizePicker() {
-    return Row(
-      children: TttBoardSize.values.map((s) {
-        final selected = _boardSize == s;
-        return Expanded(
-          child: Padding(
-            padding: EdgeInsets.only(right: s == TttBoardSize.values.last ? 0 : 8),
-            child: SelectableChip(
-              selected: selected,
-              label: s.label,
-              onTap: () => setState(() => _boardSize = s),
-            ),
-          ),
-        );
-      }).toList(),
-    );
-  }
-
-  Widget _difficultyPicker() {
-    return Column(
-      children: TttDifficulty.values.map((d) {
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: SelectableChip(
-            selected: _difficulty == d,
-            label: d.label,
-            subtitle: d.description,
-            onTap: () => setState(() => _difficulty = d),
-          ),
-        );
-      }).toList(),
-    );
-  }
-
-  Widget _markPicker() {
-    return Row(
-      children: [
-        Expanded(
-          child: SelectableChip(
-            selected: _mark == PlayerMark.x,
-            label: "X",
-            onTap: () => setState(() => _mark = PlayerMark.x),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: SelectableChip(
-            selected: _mark == PlayerMark.o,
-            label: "O",
-            onTap: () => setState(() => _mark = PlayerMark.o),
-          ),
-        ),
-      ],
     );
   }
 }

@@ -11,7 +11,6 @@ import 'package:game_hub/games/memory_match/models/memory_models.dart';
 import 'package:game_hub/games/memory_match/ui/memory_game_screen.dart';
 import 'package:game_hub/games/snake/models/snake_models.dart';
 import 'package:game_hub/games/snake/ui/snake_game_screen.dart';
-import 'package:game_hub/games/football/football_game_screen.dart';
 import 'package:game_hub/games/ludo/models/ludo_board.dart';
 import 'package:game_hub/games/ludo/ui/ludo_game_screen.dart';
 
@@ -29,6 +28,52 @@ Future<void> _setScreenSize(WidgetTester tester, Size size) async {
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
+}
+
+
+/// Le hub est un carrousel (PageView) : une seule carte est réellement
+/// visible à la fois, donc on fait défiler jusqu'au jeu voulu avant de
+/// taper dessus. Un drag d'une demi-largeur d'écran dépasse toujours le
+/// seuil de bascule (la page fait 0,74 de la largeur) quelle que soit la
+/// taille testée.
+Future<void> _swipeToGame(WidgetTester tester, int index) async {
+  final pageWidth = tester.getSize(find.byType(PageView)).width;
+  for (int i = 0; i < index; i++) {
+    await tester.drag(find.byType(PageView), Offset(-pageWidth * 0.5, 0));
+    await tester.pump();
+    // Tant que l'animation de bascule tourne, Scrollable ignore les pointeurs :
+    // on pompe par petits pas jusqu'à ce qu'elle soit terminée, sinon le tap
+    // suivant est purement et simplement avalé.
+    for (int i = 0; i < 12; i++) {
+      await tester.pump(const Duration(milliseconds: 60));
+    }
+  }
+}
+
+/// Ouvre le formulaire de configuration (SetupWizard) depuis l'écran
+/// d'accueil d'un jeu : un unique bouton "Nouvelle partie" y mène désormais,
+/// les sélecteurs de mode/difficulté/etc. ayant été déplacés dans le wizard.
+Future<void> _openWizard(WidgetTester tester) async {
+  await tester.tap(find.widgetWithText(ElevatedButton, "Nouvelle partie"));
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 300));
+}
+
+/// Touche une option du wizard puis laisse tourner l'enchaînement automatique
+/// vers l'étape suivante (délai d'affichage du choix + animation de
+/// transition), ou le lancement de la partie si c'était la dernière étape.
+Future<void> _pickWizardOption(WidgetTester tester, String label) async {
+  await tester.tap(find.text(label).first);
+  await tester.pump(const Duration(milliseconds: 250));
+  await tester.pump(const Duration(milliseconds: 300));
+}
+
+/// Valide une étape personnalisée du wizard (ex: les sièges du Ludo), qui ne
+/// s'enchaîne pas toute seule contrairement à un simple choix.
+Future<void> _tapWizardContinue(WidgetTester tester) async {
+  await tester.tap(find.widgetWithText(ElevatedButton, "Continuer"));
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 300));
 }
 
 void main() {
@@ -67,16 +112,18 @@ void main() {
       // pumpAndSettle() ne se termine jamais, on utilise des pumps bornés.
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 800));
-      expect(find.text("Échecs"), findsOneWidget);
-      expect(find.text("Football"), findsOneWidget);
-      expect(find.text("Morpion"), findsOneWidget);
-      expect(find.text("Memory"), findsOneWidget);
-      expect(find.text("Snake"), findsOneWidget);
-      expect(find.text("Ludo"), findsOneWidget);
+      // Carrousel : on parcourt les cartes une à une et chaque jeu doit
+      // apparaître à son tour, sans erreur de rendu.
+      const titles = ["Échecs", "Morpion", "Memory", "Snake", "Ludo", "Baloot"];
+      expect(find.text(titles.first), findsOneWidget);
+      for (int i = 1; i < titles.length; i++) {
+        await _swipeToGame(tester, 1);
+        expect(find.text(titles[i]), findsOneWidget);
+      }
     });
   }
 
-  final gameTitles = ["Échecs", "Football", "Morpion", "Memory", "Snake", "Ludo"];
+  final gameTitles = ["Échecs", "Morpion", "Memory", "Snake", "Ludo", "Baloot"];
 
   for (final title in gameTitles) {
     for (final size in _screenSizes) {
@@ -87,7 +134,8 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 800));
 
-        await tester.tap(find.text(title), warnIfMissed: false);
+        await _swipeToGame(tester, gameTitles.indexOf(title));
+        await tester.tap(find.text(title).first, warnIfMissed: false);
         await tester.pump();
         // Laisse le temps aux écrans qui chargent des données async
         // (ex: SharedPreferences pour l'écran d'accueil des échecs).
@@ -149,19 +197,18 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 800));
 
-    await tester.tap(find.text("Échecs"), warnIfMissed: false);
+    await _swipeToGame(tester, 0);
+    await tester.tap(find.text("Échecs").first, warnIfMissed: false);
     await tester.pump();
     for (int i = 0; i < 10; i++) {
       await tester.pump(const Duration(milliseconds: 200));
     }
 
-    await tester.tap(find.text("2 joueurs"));
-    await tester.pump();
+    await _openWizard(tester);
+    await _pickWizardOption(tester, "2 joueurs");
     // Le sélecteur de difficulté ne doit plus être affiché en mode 2 joueurs.
     expect(find.text("Débutant"), findsNothing);
-
-    await tester.tap(find.widgetWithText(ElevatedButton, "Nouvelle partie"));
-    await tester.pump();
+    await _pickWizardOption(tester, "Blancs");
     await tester.pump(const Duration(milliseconds: 500));
   });
 
@@ -210,14 +257,18 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 800));
 
-    await tester.tap(find.text("Morpion"), warnIfMissed: false);
+    await _swipeToGame(tester, 1);
+    await tester.tap(find.text("Morpion").first, warnIfMissed: false);
     await tester.pump();
     for (int i = 0; i < 10; i++) {
       await tester.pump(const Duration(milliseconds: 200));
     }
 
-    await tester.tap(find.widgetWithText(ElevatedButton, "Nouvelle partie"));
-    await tester.pump();
+    await _openWizard(tester);
+    await _pickWizardOption(tester, "Contre l'IA");
+    await _pickWizardOption(tester, "3x3");
+    await _pickWizardOption(tester, "Débutant");
+    await _pickWizardOption(tester, "X");
     await tester.pump(const Duration(milliseconds: 400));
 
     // Joue plusieurs coups en alternance avec l'IA (Débutant, donc rapide).
@@ -270,19 +321,16 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 800));
 
-    await tester.tap(find.text("Memory"), warnIfMissed: false);
+    await _swipeToGame(tester, 2);
+    await tester.tap(find.text("Memory").first, warnIfMissed: false);
     await tester.pump();
     for (int i = 0; i < 10; i++) {
       await tester.pump(const Duration(milliseconds: 200));
     }
 
-    await tester.tap(find.text("Sports"));
-    await tester.pump();
-    await tester.tap(find.text("Difficile"));
-    await tester.pump();
-
-    await tester.tap(find.widgetWithText(ElevatedButton, "Nouvelle partie"));
-    await tester.pump();
+    await _openWizard(tester);
+    await _pickWizardOption(tester, "Sports");
+    await _pickWizardOption(tester, "Difficile");
     await tester.pump(const Duration(milliseconds: 500));
   });
 
@@ -340,21 +388,16 @@ void main() {
 
     // "Snake" est sur la 3e rangée de la grille : hors écran tant qu'on n'a
     // pas fait défiler, comme le ferait un vrai utilisateur.
-    await tester.ensureVisible(find.text("Snake"));
-    await tester.pump();
-    await tester.tap(find.text("Snake"));
+    await _swipeToGame(tester, 3);
+    await tester.tap(find.text("Snake").first, warnIfMissed: false);
     await tester.pump();
     for (int i = 0; i < 10; i++) {
       await tester.pump(const Duration(milliseconds: 200));
     }
 
-    await tester.tap(find.text("Expert"));
-    await tester.pump();
-    await tester.tap(find.text("Labyrinthe"));
-    await tester.pump();
-
-    await tester.tap(find.widgetWithText(ElevatedButton, "Nouvelle partie"));
-    await tester.pump();
+    await _openWizard(tester);
+    await _pickWizardOption(tester, "Expert");
+    await _pickWizardOption(tester, "Labyrinthe");
     await tester.pump(const Duration(milliseconds: 500));
   });
 
@@ -443,44 +486,18 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 800));
 
-    await tester.ensureVisible(find.text("Ludo"));
-    await tester.pump();
-    await tester.tap(find.text("Ludo"));
+    await _swipeToGame(tester, 4); // Ludo = dernière carte du carrousel
+    await tester.tap(find.text("Ludo").first, warnIfMissed: false);
     await tester.pump();
     for (int i = 0; i < 10; i++) {
       await tester.pump(const Duration(milliseconds: 200));
     }
 
-    await tester.tap(find.text("2 joueurs"));
-    await tester.pump();
-
-    await tester.tap(find.widgetWithText(ElevatedButton, "Nouvelle partie"));
-    await tester.pump();
+    await _openWizard(tester);
+    await _pickWizardOption(tester, "2 joueurs");
+    // Étape "sièges" : personnalisée, ne s'enchaîne pas toute seule.
+    await _tapWizardContinue(tester);
+    await _pickWizardOption(tester, "Moyen");
     await tester.pump(const Duration(milliseconds: 500));
-  });
-
-  // ─────────────── Football ───────────────
-  //
-  // Football's gameplay is now a vendored Godot project (see
-  // lib/games/football/soccer-course/), embedded natively per-platform by
-  // FootballGameScreen: an AndroidView on Android, an X11/GtkSocket-backed
-  // LinuxGodotEmbedView on Linux, and an honest "not supported" message
-  // elsewhere. This suite runs on Linux, and there is no exported Godot
-  // Linux binary in this checkout (that requires a human to run the Godot
-  // Editor, see EXPORT.md) — so on this platform the screen should take the
-  // "not exported yet" path rather than crashing or faking success.
-
-  testWidgets('Football : affiche un message honnête sans plantage sur cette plateforme',
-      (tester) async {
-    await _setScreenSize(tester, const Size(390, 844));
-    await tester.pumpWidget(const MaterialApp(home: FootballGameScreen()));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
-    expect(find.text("Football"), findsOneWidget);
-    // On Linux (this test environment) with no exported binary present,
-    // FootballGameScreen must show the "not exported yet" message pointing
-    // at EXPORT.md rather than attempting to launch anything.
-    expect(find.textContaining("Godot").evaluate().isNotEmpty, isTrue);
-    expect(find.textContaining("EXPORT.md").evaluate().isNotEmpty, isTrue);
   });
 }

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../home/particle_background.dart';
 import '../../../services/game_save_service.dart';
 import '../../../services/game_stats_service.dart';
 import '../../../theme/app_colors.dart';
 import '../../../widgets/glass_card.dart';
+import '../../../widgets/setup_wizard.dart';
 import '../models/snake_models.dart';
 import 'snake_game_screen.dart';
 
@@ -44,7 +44,53 @@ class _SnakeHomeScreenState extends State<SnakeHomeScreen> {
     });
   }
 
+  List<WizardStep> _buildSteps() {
+    return [
+      WizardStep(
+        title: "Quelle vitesse ?",
+        hint: "Plus le niveau est élevé, plus le serpent va vite.",
+        options: SnakeDifficulty.values
+            .map(
+              (d) => WizardOption(
+                label: d.label,
+                subtitle: "${d.tickInterval.inMilliseconds} ms par case",
+                icon: Icons.speed_rounded,
+                selected: _difficulty == d,
+                onSelect: () => setState(() => _difficulty = d),
+              ),
+            )
+            .toList(),
+      ),
+      WizardStep(
+        title: "Choisis ta carte",
+        options: List.generate(
+          SnakeMaps.all.length,
+          (i) => WizardOption(
+            label: SnakeMaps.all[i].name,
+            icon: Icons.map_rounded,
+            selected: _mapIndex == i,
+            onSelect: () => setState(() => _mapIndex = i),
+          ),
+        ),
+      ),
+    ];
+  }
+
+  void _openSetup() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => SetupWizard(
+          gameTitle: "Snake",
+          stepsBuilder: _buildSteps,
+          onComplete: _startNewGame,
+        ),
+      ),
+    );
+  }
+
   void _startNewGame() {
+    // Ferme le formulaire pour que le retour depuis la partie ramène ici.
+    Navigator.of(context).pop();
     Navigator.of(context)
         .push(MaterialPageRoute(
           builder: (_) => SnakeGameScreen(
@@ -101,25 +147,8 @@ class _SnakeHomeScreenState extends State<SnakeHomeScreen> {
                                 _resumeCard(),
                                 const SizedBox(height: 24),
                               ],
-                              Text(
-                                "Nouvelle partie",
-                                style: GoogleFonts.poppins(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              _sectionLabel("Difficulté"),
-                              const SizedBox(height: 8),
-                              _difficultyPicker(),
-                              const SizedBox(height: 20),
-                              _sectionLabel("Carte"),
-                              const SizedBox(height: 8),
-                              _mapPicker(),
-                              const SizedBox(height: 28),
                               ElevatedButton.icon(
-                                onPressed: _startNewGame,
+                                onPressed: _openSetup,
                                 icon: const Icon(Icons.play_arrow_rounded),
                                 label: const Text("Nouvelle partie"),
                               ),
@@ -132,13 +161,6 @@ class _SnakeHomeScreenState extends State<SnakeHomeScreen> {
                 ),
         ],
       ),
-    );
-  }
-
-  Widget _sectionLabel(String text) {
-    return Text(
-      text,
-      style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: kMuted),
     );
   }
 
@@ -184,37 +206,4 @@ class _SnakeHomeScreenState extends State<SnakeHomeScreen> {
     );
   }
 
-  Widget _difficultyPicker() {
-    return Row(
-      children: SnakeDifficulty.values.map((d) {
-        return Expanded(
-          child: Padding(
-            padding: EdgeInsets.only(right: d == SnakeDifficulty.values.last ? 0 : 8),
-            child: SelectableChip(
-              selected: _difficulty == d,
-              label: d.label,
-              onTap: () => setState(() => _difficulty = d),
-            ),
-          ),
-        );
-      }).toList(),
-    );
-  }
-
-  Widget _mapPicker() {
-    return Column(
-      children: List.generate(SnakeMaps.all.length, (i) {
-        final map = SnakeMaps.all[i];
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: SelectableChip(
-            selected: _mapIndex == i,
-            icon: Icons.map_rounded,
-            label: map.name,
-            onTap: () => setState(() => _mapIndex = i),
-          ),
-        );
-      }),
-    );
-  }
 }

@@ -1,8 +1,10 @@
 # 🎮 Game Hub - Flutter
 
-Une application Flutter regroupant 6 mini-jeux jouables, accessibles depuis un
-écran d'accueil animé (fond de particules, cartes en verre dépoli), sans
-moteur de jeu externe. Chaque jeu suit la même architecture en couches
+Une application Flutter regroupant 5 mini-jeux jouables, accessibles depuis un
+écran d'accueil animé : un carrousel façon sélecteur d'applications (fond de
+particules, cartes en verre dépoli, cartes voisines visibles de chaque côté,
+aperçu du plateau de chaque jeu sur sa carte), sans moteur de jeu externe.
+Chaque jeu suit la même architecture en couches
 (models / engine / services / ui) et partage une infrastructure commune :
 statistiques persistées, sauvegarde automatique, système audio et widgets
 de résultat/carte réutilisables.
@@ -12,7 +14,6 @@ de résultat/carte réutilisables.
 | Jeu | Description |
 |-----|--------------|
 | ♟️ Échecs | Moteur complet (roque, en passant, promotion, échec/mat/pat, nulles) + IA (3 niveaux, minimax/alpha-bêta), mode 2 joueurs, historique, chrono, sauvegarde |
-| ⚽ Football | Sélections nationales (Mauritanie par défaut), Match rapide simulé en direct, Tirs au but (IA du gardien à 4 niveaux), et Compétitions (Coupe du Monde/CAN/Euro/Copa América/Coupe d'Asie/tournoi personnalisé) |
 | ❌ Morpion | Grilles 3x3/4x4/5x5, IA à 3 niveaux (aléatoire → heuristique → Minimax/alpha-bêta), ligne gagnante animée |
 | 🧠 Memory | 6 thèmes (animaux, fruits, sports, pays, drapeaux, emoji), 4 niveaux, combo/score, confettis à la victoire |
 | 🐍 Snake | 3 difficultés, 4 cartes d'obstacles, objets spéciaux (bouclier, boost, double score, bonus), pause |
@@ -81,32 +82,6 @@ Le module `lib/games/chess/` est découpé en couches indépendantes :
 - `ui/widgets/piece_painter.dart` — pièces dessinées en vectoriel pur
   (`CustomPainter`), nettes à toute taille, sans asset externe.
 
-### Football : architecture détaillée
-
-Le module `lib/games/football/` (ex-Penalty, conservé et étendu — aucune
-fonctionnalité existante supprimée) est organisé en couches :
-
-- `models/team.dart` + `models/teams_database.dart` — fiche complète par
-  sélection (attaque, milieu, défense, gardien, vitesse, passes, tir,
-  overall calculé) et base de ~39 équipes réparties sur les 6 continents.
-  La Mauritanie est toujours en première position (`TeamsDatabase.defaultTeam`)
-  et sélectionnée par défaut au premier lancement (`TeamSelectionService`).
-- `engine/match_engine.dart` — simulation statistique minute par minute
-  d'un match (probabilité de but pondérée par l'écart de niveau tir/gardien,
-  avec un plancher pour qu'un outsider garde une vraie chance), stats
-  (possession, tirs, tirs cadrés, fautes, cartons) et commentaires.
-- `engine/tournament_engine.dart` — bracket à élimination directe générique
-  (réutilisé pour Coupe du Monde/CAN/Euro/Copa América/Coupe d'Asie/tournoi
-  personnalisé, seul le vivier de participants change), avec séance de tirs
-  au but simulée pour départager les matchs nuls.
-- `engine/penalty_engine.dart` + `models/penalty_models.dart` — IA du
-  gardien à 4 niveaux (Facile → Expert) pour l'écran Tirs au but.
-- `widgets/` — carte équipe, barres de stats, tableau de score, ticker de
-  commentaires, fond de stade thématisé par confédération avec effet météo
-  (pluie/brouillard/projecteurs en `CustomPainter`, sans assets externes).
-- `ui/` — accueil (équipe/adversaire/mode), sélection Continent → Pays,
-  Match rapide, Tirs au but, réglage puis déroulé de tournoi (podium + trophée).
-
 ### Ludo : géométrie du plateau
 
 `lib/games/ludo/models/ludo_board.dart` définit un plateau classique en
@@ -135,7 +110,7 @@ flutter test
 
 ```
 lib/
-  main.dart                       # Écran d'accueil (hub) et navigation
+  main.dart                       # Hub : carrousel de jeux + navigation
   home/
     particle_background.dart      # Fond animé de particules
   theme/
@@ -158,8 +133,6 @@ lib/
       models/ engine/ services/ ui/
     snake/
       models/ engine/ ui/
-    football/
-      models/ engine/ services/ widgets/ ui/ utils/
     ludo/
       models/ engine/ ui/
 ```

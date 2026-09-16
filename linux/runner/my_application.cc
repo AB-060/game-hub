@@ -6,7 +6,6 @@
 #endif
 
 #include "flutter/generated_plugin_registrant.h"
-#include "../godot_embed/godot_embed_channel.h"
 
 struct _MyApplication {
   GtkApplication parent_instance;
@@ -67,29 +66,7 @@ static void my_application_activate(GApplication* application) {
   fl_view_set_background_color(view, &background_color);
   gtk_widget_show(GTK_WIDGET(view));
 
-  // The FlView renders in a GtkOverlay so the football screen's embedded
-  // Godot GtkSocket (see godot_embed/godot_embed_channel.cc) can be laid
-  // out, via a GtkFixed overlay child, at absolute coordinates matching the
-  // Flutter-side widget's on-screen bounds — the only way to composite a
-  // native GTK/X11 window "inside" the Flutter view, since Flutter's Linux
-  // embedder has no PlatformView API of its own.
-  GtkWidget* overlay = gtk_overlay_new();
-  gtk_container_add(GTK_CONTAINER(overlay), GTK_WIDGET(view));
-
-  GtkWidget* godot_embed_fixed = gtk_fixed_new();
-  gtk_widget_set_halign(godot_embed_fixed, GTK_ALIGN_FILL);
-  gtk_widget_set_valign(godot_embed_fixed, GTK_ALIGN_FILL);
-  gtk_overlay_add_overlay(GTK_OVERLAY(overlay), godot_embed_fixed);
-  // GtkOverlay children intercept pointer input by default even when empty,
-  // which would swallow every click across the whole app (this fixed layer
-  // covers the entire window). Pass-through lets clicks reach the FlView
-  // beneath; the embedded Godot GtkSocket still gets its own input directly
-  // via its native X11 window, unaffected by this GTK-level setting.
-  gtk_overlay_set_overlay_pass_through(GTK_OVERLAY(overlay), godot_embed_fixed, TRUE);
-  gtk_widget_show(godot_embed_fixed);
-
-  gtk_widget_show(overlay);
-  gtk_container_add(GTK_CONTAINER(window), overlay);
+  gtk_container_add(GTK_CONTAINER(window), GTK_WIDGET(view));
 
   // Show the window when Flutter renders.
   // Requires the view to be realized so we can start rendering.
@@ -98,9 +75,6 @@ static void my_application_activate(GApplication* application) {
   gtk_widget_realize(GTK_WIDGET(view));
 
   fl_register_plugins(FL_PLUGIN_REGISTRY(view));
-
-  godot_embed_channel_setup(fl_engine_get_binary_messenger(fl_view_get_engine(view)),
-                             GTK_FIXED(godot_embed_fixed));
 
   gtk_widget_grab_focus(GTK_WIDGET(view));
 }
