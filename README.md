@@ -1,4 +1,4 @@
-# 🎮 Game Hub - Flutter
+# Game Hub - Flutter
 
 Une application Flutter regroupant 5 mini-jeux jouables, accessibles depuis un
 écran d'accueil animé : un carrousel façon sélecteur d'applications (fond de
@@ -13,11 +13,11 @@ de résultat/carte réutilisables.
 
 | Jeu | Description |
 |-----|--------------|
-| ♟️ Échecs | Moteur complet (roque, en passant, promotion, échec/mat/pat, nulles) + IA (3 niveaux, minimax/alpha-bêta), mode 2 joueurs, historique, chrono, sauvegarde |
-| ❌ Morpion | Grilles 3x3/4x4/5x5, IA à 3 niveaux (aléatoire → heuristique → Minimax/alpha-bêta), ligne gagnante animée |
-| 🧠 Memory | 6 thèmes (animaux, fruits, sports, pays, drapeaux, emoji), 4 niveaux, combo/score, confettis à la victoire |
-| 🐍 Snake | 3 difficultés, 4 cartes d'obstacles, objets spéciaux (bouclier, boost, double score, bonus), pause |
-| 🎲 Ludo | Plateau classique 15x15 (piste de 52 cases + couloirs privés), 2 à 4 joueurs, IA à 3 niveaux (capture/protection/sortie), mode IA contre IA |
+|  Échecs | Moteur complet (roque, en passant, promotion, échec/mat/pat, nulles) + IA (3 niveaux, minimax/alpha-bêta), mode 2 joueurs, historique, chrono, sauvegarde |
+|  Morpion | Grilles 3x3/4x4/5x5, IA à 3 niveaux (aléatoire → heuristique → Minimax/alpha-bêta), ligne gagnante animée |
+|  Memory | 6 thèmes (animaux, fruits, sports, pays, drapeaux, emoji), 4 niveaux, combo/score, confettis à la victoire |
+|  Snake | 3 difficultés, 4 cartes d'obstacles, objets spéciaux (bouclier, boost, double score, bonus), pause |
+|  Ludo | Plateau classique 15x15 (piste de 52 cases + couloirs privés), 2 à 4 joueurs, IA à 3 niveaux (capture/protection/sortie), mode IA contre IA |
 
 Tous les jeux : sauvegarde automatique + reprise de partie, statistiques
 persistées (parties, victoires, meilleur score, meilleure série), sons
@@ -139,4 +139,4 @@ lib/
 
 ## Auteur
 
-**AB-060** - [github.com/AB-060](https://github.com/AB-060)
+**Abdallahi** - [github.com/AB-060](https://github.com/AB-060)
